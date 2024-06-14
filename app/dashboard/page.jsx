@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 import { Input } from "@/components/ui/input";
 import { chatSession } from "../utils/GeminiAiModal";
@@ -24,6 +25,9 @@ import { useUser } from "@clerk/nextjs";
 import { LoaderCircle } from "lucide-react";
 import InterviewCard from "./_components/InterviewCard";
 import InterviewCardSkeleton from "./_components/InterviewCardSkeleton";
+import { useRecoilState } from "recoil";
+import { CustomUserHook } from "./_states/userHook";
+import { useRouter } from "next/navigation";
 
 function DashBoard() {
   const [openDialog, setOpenDialog] = useState(false);
@@ -31,7 +35,8 @@ function DashBoard() {
   const [loading, setLoading] = useState(false);
   const [interviewLoading, setInterviewLoading] = useState(false);
   const [interviews, setInterviews] = useState([]);
-
+  const [userHook, setUserHook] = useRecoilState(CustomUserHook);
+  const router = useRouter();
   async function getInterviews() {
     try {
       setInterviewLoading(true);
@@ -45,10 +50,25 @@ function DashBoard() {
       setInterviewLoading(false);
     }
   }
+  async function createUser() {
+    try {
+      const response = await fetch("/api/user", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: isLoaded && user.id,
+        }),
+      });
+      const result = await response.json();
+      setUserHook(result);
+    } catch (err) {
+    } finally {
+    }
+  }
 
   useEffect(() => {
     if (isLoaded) {
       getInterviews();
+      createUser();
     }
   }, [isLoaded]);
 
@@ -91,6 +111,7 @@ function DashBoard() {
         if (response.ok) {
           const data = await response.json();
           getInterviews();
+          router.push(`/dashboard/interview/${data._id}`);
         } else {
           console.log("Error: ", response.statusText);
         }
@@ -103,11 +124,35 @@ function DashBoard() {
     }
   }
 
+  function planCount(plan) {
+    switch (plan) {
+      case "free":
+        return 5;
+      default:
+        break;
+    }
+  }
+
   return (
     <div className="w-full">
       <h1 className="text-primary text-2xl sm:text-4xl font-medium">
         DashBoard
       </h1>
+      <div className="flex items-center gap-2 ">
+        <p className="text-destructive capitalize text-lg font-medium">
+          {userHook?.plan} Plan
+        </p>
+        <div className="">
+          <Progress
+            value={
+              interviewLoading
+                ? 0
+                : (interviews.length / planCount(userHook?.plan)) * 100
+            }
+            className="h-2 w-32"
+          />
+        </div>
+      </div>
       <div className="grid grid-cols-1 py-10 gap-4 min-[450px]:grid-cols-2 md:grid-cols-3">
         <div
           onClick={() => {

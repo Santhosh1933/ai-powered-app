@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import React from "react";
 
 function InterviewCard({ interview }) {
-  console.log(interview);
   const router = useRouter();
   return (
     <div className="bg-secondary cursor-pointer p-4  grid gap-2 hover:shadow-sm border hover:border-primary duration-300 ease-in-out h-40 rounded-md w-full ">
